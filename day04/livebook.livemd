@@ -1,0 +1,34 @@
+# Day 4
+
+```elixir
+Mix.install([:kino])
+```
+
+## Camp Cleanup
+
+```elixir
+input = Kino.Input.textarea("Input")
+```
+
+```elixir
+data =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n")
+  |> Enum.map(fn l ->
+    [l1, l2, r1, r2] = l |> String.split(~r/[-,]/) |> Enum.map(&String.to_integer/1)
+    {l1..l2, r1..r2}
+  end)
+```
+
+## Part 1
+
+```elixir
+Enum.count(data, fn {l1..l2, r1..r2} -> (l1 >= r1 and l2 <= r2) or (r1 >= l1 and r2 <= l2) end)
+```
+
+## Part 2
+
+```elixir
+Enum.count(data, fn {r1, r2} -> not Range.disjoint?(r1, r2) end)
+```

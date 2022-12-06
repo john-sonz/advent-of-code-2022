@@ -1,0 +1,87 @@
+# Day 5
+
+```elixir
+Mix.install([:kino])
+```
+
+## Supply Stacks
+
+```elixir
+stacks_input = Kino.Input.textarea("Stacks")
+```
+
+```elixir
+moves_input = Kino.Input.textarea("Moves")
+```
+
+```elixir
+stacks =
+  stacks_input
+  |> Kino.Input.read()
+  |> then(fn s ->
+    lines = String.split(s, "\n", trim: true)
+    line_len = lines |> hd |> String.length()
+    indices = 1..line_len//4
+    stacks = 1..9 |> Enum.to_list() |> Map.from_keys([])
+
+    lines
+    |> Enum.reduce(stacks, fn line, stacks ->
+      indices
+      |> Enum.map(&String.at(line, &1))
+      |> Enum.with_index(1)
+      |> Enum.reduce(stacks, fn {letter, stack}, stacks ->
+        Map.update!(stacks, stack, &Kernel.++([letter], &1))
+      end)
+    end)
+    |> Map.new(fn {key, value} ->
+      {key, value |> Enum.filter(&(&1 != " ")) |> Enum.reverse()}
+    end)
+  end)
+```
+
+```elixir
+moves =
+  moves_input
+  |> Kino.Input.read()
+  |> String.replace(" ", "")
+  |> String.split("\n")
+  |> Enum.map(fn line ->
+    line |> String.split(~r/(move|from|to)/, trim: true) |> Enum.map(&String.to_integer/1)
+  end)
+```
+
+```elixir
+defmodule Stacks do
+  def move(stacks, from, to) do
+    {val, stacks} = Map.get_and_update!(stacks, from, &{hd(&1), tl(&1)})
+    Map.update!(stacks, to, &[val | &1])
+  end
+
+  def move_many(stacks, amount, from, to) do
+    {val, stacks} = Map.get_and_update!(stacks, from, &Enum.split(&1, amount))
+    Map.update!(stacks, to, &(val ++ &1))
+  end
+end
+```
+
+## Part 1
+
+```elixir
+moves
+|> Enum.reduce(stacks, fn [amount, from, to], stacks ->
+  Enum.reduce(1..amount, stacks, fn _, stacks -> Stacks.move(stacks, from, to) end)
+end)
+|> Map.values()
+|> Enum.map_join(&hd/1)
+```
+
+## Part 2
+
+```elixir
+moves
+|> Enum.reduce(stacks, fn [amount, from, to], stacks ->
+  Stacks.move_many(stacks, amount, from, to)
+end)
+|> Map.values()
+|> Enum.map_join(&hd/1)
+```

@@ -1,0 +1,63 @@
+# Day 3
+
+## Rucksack Reorganization
+
+```elixir
+Mix.install([:kino])
+```
+
+```elixir
+input = Kino.Input.textarea("Input")
+```
+
+```elixir
+defmodule Rucksack do
+  def priority(rucksack) do
+    size = String.length(rucksack) |> div(2)
+    {left, right} = String.split_at(rucksack, size)
+
+    left
+    |> String.split("", trim: true)
+    |> MapSet.new()
+    |> MapSet.intersection(right |> String.split("", trim: true) |> MapSet.new())
+    |> MapSet.to_list()
+    |> case do
+      [<<letter::utf8>>] when letter > 96 -> letter - 96
+      [<<letter::utf8>>] -> letter - 38
+    end
+  end
+
+  def group_priority(group) do
+    group
+    |> Enum.map(&String.split(&1, "", trim: true))
+    |> Enum.map(&MapSet.new/1)
+    |> Enum.reduce(&MapSet.intersection/2)
+    |> MapSet.to_list()
+    |> case do
+      [<<letter::utf8>>] when letter > 96 -> letter - 96
+      [<<letter::utf8>>] -> letter - 38
+    end
+  end
+end
+```
+
+## Part 1
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.map(&Rucksack.priority/1)
+|> Enum.sum()
+```
+
+## Part 2
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.chunk_every(3)
+|> Enum.map(&Rucksack.group_priority/1)
+|> Enum.sum()
+```

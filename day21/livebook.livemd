@@ -1,0 +1,27 @@
+# Day
+
+```elixir
+Mix.install([:kino])
+```
+
+## Name
+
+```elixir
+input = Kino.Input.textarea("Input")
+```
+
+```elixir
+
+```
+
+## Part 1
+
+```elixir
+
+```
+
+## Part 2
+
+```elixir
+
+```

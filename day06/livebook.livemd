@@ -1,0 +1,35 @@
+# Day 6
+
+```elixir
+Mix.install([:kino])
+```
+
+## Tuning Trouble
+
+```elixir
+input = Kino.Input.textarea("Input")
+```
+
+## Part 1
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.graphemes()
+|> Enum.chunk_every(4, 1)
+|> Enum.with_index(4)
+|> Enum.find(fn {letters, _} -> Enum.uniq(letters) == letters end)
+|> elem(1)
+```
+
+## Part 2
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.graphemes()
+|> Enum.chunk_every(14, 1)
+|> Enum.with_index(14)
+|> Enum.find(fn {letters, _} -> Enum.uniq(letters) == letters end)
+|> elem(1)
+```

@@ -1,0 +1,54 @@
+# Day 2
+
+## Rock Paper Scissors
+
+```elixir
+Mix.install([:kino])
+```
+
+```elixir
+input = Kino.Input.textarea("Input")
+```
+
+## Part 1
+
+```elixir
+defmodule RockPaperScissors do
+  def outcome("A X"), do: 4
+  def outcome("A Y"), do: 8
+  def outcome("A Z"), do: 3
+  def outcome("B X"), do: 1
+  def outcome("B Y"), do: 5
+  def outcome("B Z"), do: 9
+  def outcome("C X"), do: 7
+  def outcome("C Y"), do: 2
+  def outcome("C Z"), do: 6
+
+  def transform("A X"), do: "A Z"
+  def transform("A Y"), do: "A X"
+  def transform("A Z"), do: "A Y"
+  def transform("B X"), do: "B X"
+  def transform("B Y"), do: "B Y"
+  def transform("B Z"), do: "B Z"
+  def transform("C X"), do: "C Y"
+  def transform("C Y"), do: "C Z"
+  def transform("C Z"), do: "C X"
+end
+
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.map(&RockPaperScissors.outcome/1)
+|> Enum.sum()
+```
+
+## Part 2
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split("\n")
+|> Enum.map(&RockPaperScissors.transform/1)
+|> Enum.map(&RockPaperScissors.outcome/1)
+|> Enum.sum()
+```
