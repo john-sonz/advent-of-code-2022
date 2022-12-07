@@ -1,27 +1,112 @@
-# Day
+# Day 7
 
 ```elixir
 Mix.install([:kino])
 ```
 
-## Name
+## No Space Left On Device
 
 ```elixir
 input = Kino.Input.textarea("Input")
 ```
 
 ```elixir
+defmodule FileSystem do
+  defmodule File do
+    defstruct [:name, :size, :path]
+  end
 
+  defmodule Directory do
+    defstruct [:name, :size, :path, children: []]
+  end
+end
+
+acc = {"/", [%FileSystem.Directory{name: "/", size: 0, path: "/"}]}
+
+file_system =
+  input
+  |> Kino.Input.read()
+  |> String.split("$ ", trim: true)
+  |> Enum.map(&String.split(&1, "\n", trim: true))
+  |> Enum.reduce(acc, fn [command | result], {current_path, files} ->
+    case command do
+      "cd /" ->
+        {"/", files}
+
+      "cd .." ->
+        {Path.expand(Path.join(current_path, "..")), files}
+
+      "cd " <> target ->
+        {Path.join(current_path, target), files}
+
+      "ls" ->
+        {
+          current_path,
+          result
+          |> Enum.map(fn
+            "dir " <> name ->
+              %FileSystem.Directory{name: name, size: 0, path: current_path}
+
+            file ->
+              [size, name] = String.split(file)
+              %FileSystem.File{name: name, size: String.to_integer(size), path: current_path}
+          end)
+          |> Enum.concat(files)
+        }
+    end
+  end)
+  |> elem(1)
+  |> Enum.sort_by(&Path.join(&1.path, &1.name))
+
+{dirs, files} = Enum.split_with(file_system, &match?(%FileSystem.Directory{}, &1))
 ```
 
 ## Part 1
 
 ```elixir
+dirs_map =
+  Map.new(dirs, fn %FileSystem.Directory{name: name, path: path} = dir ->
+    {Path.join(path, name), dir}
+  end)
 
+sized_dirs =
+  Enum.reduce(files, dirs_map, fn %FileSystem.File{path: path, size: size}, dirs_map ->
+    Path.split(path)
+    |> tl
+    |> Enum.reduce({"/", dirs_map}, fn current_dir, {base_path, dirs_map} ->
+      full_path = Path.join(base_path, current_dir)
+
+      {
+        full_path,
+        Map.update!(dirs_map, full_path, fn dir ->
+          Map.update!(dir, :size, &(&1 + size))
+        end)
+      }
+    end)
+    |> elem(1)
+    |> Map.update!("/", fn dir ->
+      Map.update!(dir, :size, &(&1 + size))
+    end)
+  end)
+
+sized_dirs
+|> Map.values()
+|> Enum.filter(&(&1.size <= 100_000))
+|> Enum.map(& &1.size)
+|> Enum.sum()
 ```
 
 ## Part 2
 
 ```elixir
+total_space = 70_000_000
+needed_space = 30_000_000
+used_space = sized_dirs["/"].size
+missing_space = needed_space - (total_space - used_space)
 
+sized_dirs
+|> Map.values()
+|> Enum.sort_by(& &1.size)
+|> Enum.find(&(&1.size >= missing_space))
+|> Map.get(:size)
 ```
