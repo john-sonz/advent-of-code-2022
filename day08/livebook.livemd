@@ -1,27 +1,96 @@
-# Day
+# Day 8
 
 ```elixir
-Mix.install([:kino])
+Mix.install([:kino, :nx])
 ```
 
-## Name
+## Treetop Tree House
 
 ```elixir
 input = Kino.Input.textarea("Input")
 ```
 
 ```elixir
+trees =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n", trim: true)
+  |> Enum.map(fn row ->
+    row |> String.split("", trim: true) |> Enum.map(&String.to_integer/1)
+  end)
+  |> Nx.tensor()
 
+trees_t = Nx.transpose(trees)
+```
+
+```elixir
+defmodule Forest do
+  def visible?(_, _, {x, y}) when x == 0 or y == 0, do: true
+
+  def visible?(trees, trees_t, {x, y}) do
+    {height, width} = Nx.shape(trees)
+
+    if x == width - 1 or y == height - 1 do
+      true
+    else
+      check_visible?(trees, trees_t, {x, y})
+    end
+  end
+
+  defp check_visible?(trees, trees_t, {x, y}) do
+    {height, width} = Nx.shape(trees)
+
+    max_l = Nx.reduce_max(trees[y][0..(x - 1)])
+    max_r = Nx.reduce_max(trees[y][(x + 1)..(width - 1)])
+    max_u = Nx.reduce_max(trees_t[x][0..(y - 1)])
+    max_d = Nx.reduce_max(trees_t[x][(y + 1)..(height - 1)])
+    tree_height = Nx.to_number(trees[y][x])
+
+    Enum.any?([max_l, max_r, max_u, max_d], &(tree_height > Nx.to_number(&1)))
+  end
+
+  def scenic_score(trees, trees_t, {x, y}) do
+    {height, width} = Nx.shape(trees)
+    tree_height = Nx.to_number(trees[y][x])
+
+    [
+      Nx.reverse(trees[y][0..max(x - 1, 0)]),
+      trees[y][min(x + 1, width - 1)..(width - 1)],
+      Nx.reverse(trees_t[x][0..max(y - 1, 0)]),
+      trees_t[x][min(y + 1, height - 1)..(height - 1)]
+    ]
+    |> Enum.map(&Nx.to_flat_list/1)
+    |> Enum.map(&get_score(&1, tree_height))
+    |> Enum.product()
+  end
+
+  defp get_score([_], _), do: 0
+
+  defp get_score(trees, tree_height) do
+    Enum.reduce_while(trees, 0, fn
+      tree, acc when tree < tree_height -> {:cont, acc + 1}
+      _, acc -> {:halt, acc + 1}
+    end)
+  end
+end
 ```
 
 ## Part 1
 
 ```elixir
+{height, width} = Nx.shape(trees)
 
+for y <- 0..(height - 1), x <- 0..(width - 1) do
+  Forest.visible?(trees, trees_t, {x, y})
+end
+|> Enum.count(& &1)
 ```
 
 ## Part 2
 
 ```elixir
-
+for y <- 0..(height - 1), x <- 0..(width - 1) do
+  Forest.scenic_score(trees, trees_t, {x, y})
+end
+|> Enum.max()
 ```

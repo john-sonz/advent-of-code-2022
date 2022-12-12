@@ -1,27 +1,120 @@
-# Day
+# Day 9
 
 ```elixir
 Mix.install([:kino])
 ```
 
-## Name
+## Rope Bridge
 
 ```elixir
 input = Kino.Input.textarea("Input")
 ```
 
 ```elixir
+moves =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n", trim: true)
+  |> Enum.map(&String.split/1)
+  |> Enum.flat_map(fn [move, steps] ->
+    steps
+    |> String.to_integer()
+    |> then(&List.duplicate(move, &1))
+  end)
+```
 
+```elixir
+defmodule Knots do
+  def follow({hdx, hdy}, {tlx, tly} = tail) do
+    {dx, dy} = {hdx - tlx, hdy - tly}
+
+    if abs(dx) > 1 or abs(dy) > 1 do
+      {tlx + delta(dx), tly + delta(dy)}
+    else
+      tail
+    end
+  end
+
+  def delta(0), do: 0
+  def delta(x) when x < 0, do: -1
+  def delta(_), do: 1
+
+  def step({x, y}, move, steps) do
+    case move do
+      "R" -> {x + steps, y}
+      "L" -> {x - steps, y}
+      "U" -> {x, y + steps}
+      "D" -> {x, y - steps}
+    end
+  end
+
+  def sign(x) when x < 0, do: -1
+  def sign(x) when x > 0, do: 1
+  def sign(_), do: 0
+
+  def show_map(points, size \\ 6) do
+    map =
+      points
+      |> Enum.with_index()
+      |> Enum.reduce(%{}, fn {point, index}, m -> Map.put_new(m, point, index) end)
+
+    for y <- (size - 1)..0//-1 do
+      for x <- 0..(size - 1) do
+        Map.get(map, {x, y}, if({x, y} == {0, 0}, do: "s", else: "."))
+      end
+      |> Enum.join()
+    end
+    |> Enum.join("\n")
+  end
+end
 ```
 
 ## Part 1
 
 ```elixir
+moves
+|> Enum.reduce(
+  {List.duplicate({0, 0}, 2), MapSet.new([{0, 0}])},
+  fn move, {[head | tail], visited} ->
+    head = Knots.step(head, move, 1)
 
+    tail =
+      tail
+      |> Enum.reduce({head, []}, fn knot, {to_follow, tail} ->
+        to_follow
+        |> Knots.follow(knot)
+        |> then(&{&1, [&1 | tail]})
+      end)
+      |> elem(1)
+
+    {[head | Enum.reverse(tail)], MapSet.put(visited, hd(tail))}
+  end
+)
+|> elem(1)
+|> MapSet.size()
 ```
 
 ## Part 2
 
 ```elixir
+moves
+|> Enum.reduce(
+  {List.duplicate({0, 0}, 10), MapSet.new([{0, 0}])},
+  fn move, {[head | tail], visited} ->
+    head = Knots.step(head, move, 1)
 
+    tail =
+      tail
+      |> Enum.reduce({head, []}, fn knot, {to_follow, tail} ->
+        to_follow
+        |> Knots.follow(knot)
+        |> then(&{&1, [&1 | tail]})
+      end)
+      |> elem(1)
+
+    {[head | Enum.reverse(tail)], MapSet.put(visited, hd(tail))}
+  end
+)
+|> elem(1)
+|> MapSet.size()
 ```

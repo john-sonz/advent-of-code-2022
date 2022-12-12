@@ -1,27 +1,133 @@
-# Day
+# Day 11
 
 ```elixir
 Mix.install([:kino])
 ```
 
-## Name
+## Monkey in the Middle
 
 ```elixir
 input = Kino.Input.textarea("Input")
 ```
 
 ```elixir
+defmodule Monkey do
+  def round_all(monkeys) do
+    1..Enum.count(monkeys)
+    |> Enum.reduce(monkeys, &Monkey.round(&2[&1 - 1], &2))
+  end
 
+  def round(%{items: []}, monkeys), do: monkeys
+
+  def round(%{items: items} = monkey, monkeys) do
+    stress_management =
+      monkeys
+      |> Map.values()
+      |> Enum.map(& &1.divisor)
+      |> Enum.product()
+
+    items
+    |> Enum.map(&inspect_item(&1, monkey))
+    |> Enum.reduce(monkeys, fn {item, target}, monkeys ->
+      update_in(monkeys, [target, :items], &Kernel.++(&1, [rem(item, stress_management)]))
+    end)
+    |> Map.put(monkey.id, %{
+      monkey
+      | items: [],
+        inspections: monkey.inspections + length(items)
+    })
+  end
+
+  def inspect_item(item, %{op: op, test: test, deworry: deworry}) do
+    item
+    |> op.()
+    |> deworry.()
+    |> then(&{&1, test.(&1)})
+  end
+
+  def get(input, d) do
+    input
+    |> Kino.Input.read()
+    |> String.split("\n\n", trim: true)
+    |> Enum.map(&String.split(&1, "\n", trim: true))
+    |> Enum.map(fn monkey ->
+      [title, items, operation | test] = Enum.map(monkey, &String.trim/1)
+
+      id = title |> String.replace(~r/[^\d]/, "") |> String.to_integer()
+
+      items =
+        items
+        |> String.replace(~r/[^\d,]/, "")
+        |> String.split(",")
+        |> Enum.map(&String.to_integer/1)
+
+      op =
+        operation
+        |> String.split("=")
+        |> Enum.at(-1)
+        |> String.split(" ", trim: true)
+        |> case do
+          ["old", op, "old"] ->
+            &Kernel.apply(Kernel, String.to_existing_atom(op), [&1, &1])
+
+          ["old", op, arg2] ->
+            &Kernel.apply(Kernel, String.to_existing_atom(op), [&1, String.to_integer(arg2)])
+
+          [arg1, op, "old"] ->
+            &Kernel.apply(Kernel, String.to_existing_atom(op), [String.to_integer(arg1), &1])
+        end
+
+      divisor = test |> hd() |> String.replace(~r/[^\d]/, "") |> String.to_integer()
+      true_target = test |> Enum.at(1) |> String.replace(~r/[^\d]/, "") |> String.to_integer()
+      false_target = test |> Enum.at(2) |> String.replace(~r/[^\d]/, "") |> String.to_integer()
+
+      test = fn worry_level ->
+        if rem(worry_level, divisor) == 0 do
+          true_target
+        else
+          false_target
+        end
+      end
+
+      %{
+        id: id,
+        items: items,
+        op: op,
+        test: test,
+        inspections: 0,
+        divisor: divisor,
+        deworry: &div(&1, d)
+      }
+    end)
+    |> Map.new(&{&1.id, &1})
+  end
+end
 ```
 
 ## Part 1
 
 ```elixir
-
+1..20
+|> Enum.reduce(Monkey.get(input, 3), fn _, monkeys ->
+  Monkey.round_all(monkeys)
+end)
+|> Map.values()
+|> Enum.map(& &1.inspections)
+|> Enum.sort(:desc)
+|> Enum.take(2)
+|> Enum.product()
 ```
 
 ## Part 2
 
 ```elixir
-
+1..10000
+|> Enum.reduce(Monkey.get(input, 1), fn _, monkeys ->
+  Monkey.round_all(monkeys)
+end)
+|> Map.values()
+|> Enum.map(& &1.inspections)
+|> Enum.sort(:desc)
+|> Enum.take(2)
+|> Enum.product()
 ```

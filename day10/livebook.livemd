@@ -1,27 +1,69 @@
-# Day
+# Day 10
 
 ```elixir
 Mix.install([:kino])
 ```
 
-## Name
+## Cathode-Ray Tube
 
 ```elixir
 input = Kino.Input.textarea("Input")
 ```
 
 ```elixir
-
+program =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n", trim: true)
+  |> Enum.map(&String.split/1)
 ```
 
 ## Part 1
 
 ```elixir
+program
+|> Enum.flat_map_reduce({1, 1}, fn instruction, {x, cycle} ->
+  case instruction do
+    ["noop"] ->
+      {[{cycle, x}], {x, cycle + 1}}
 
+    ["addx", val] ->
+      num = String.to_integer(val)
+      {[{cycle, x}, {cycle + 1, x}], {x + num, cycle + 2}}
+  end
+end)
+|> elem(0)
+|> Enum.filter(&(elem(&1, 0) in 20..220//40))
+|> Enum.map(&Tuple.product/1)
+|> Enum.sum()
 ```
 
 ## Part 2
 
 ```elixir
+program
+|> Enum.flat_map_reduce({1, 1}, fn instruction, {x, cycle} ->
+  case instruction do
+    ["noop"] ->
+      {[{cycle, x}], {x, cycle + 1}}
 
+    ["addx", val] ->
+      num = String.to_integer(val)
+      {[{cycle, x}, {cycle + 1, x}], {x + num, cycle + 2}}
+  end
+end)
+|> elem(0)
+|> Enum.map(fn {cycle, x} ->
+  if rem(cycle - 1, 40) in [x - 1, x, x + 1] do
+    "#"
+  else
+    "."
+  end
+end)
+|> Enum.chunk_every(40)
+|> Enum.map(&Enum.join/1)
+|> Enum.join("\n")
+|> IO.puts()
+
+# RFZEKBFA
 ```
